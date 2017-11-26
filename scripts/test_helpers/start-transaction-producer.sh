@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# PLEASE CHANGE ME
 CONFLUENT_HOME=/opt/confluent-3.3.1
 
 # WARNING: either this script or the data in transaction.input may be DODGY,

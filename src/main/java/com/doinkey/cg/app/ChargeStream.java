@@ -1,8 +1,7 @@
-package com.doinkey.cg.streams;
+package com.doinkey.cg.app;
 
-import com.doinkey.cg.*;
-import com.doinkey.cg.domain.ChargeCalculator;
-import com.doinkey.cg.domain.TransactionValidator;
+import com.doinkey.cg.app.domain.ChargeCalculator;
+import com.doinkey.cg.app.domain.TransactionValidator;
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import org.apache.kafka.common.serialization.Serde;
@@ -48,6 +47,9 @@ public class ChargeStream {
         KStreamBuilder builder = new KStreamBuilder();
 
         final Serde<String> stringSerde = Serdes.String();
+//        Topic charges = new Topic(outputTopic, stringSerde, chargeSerde);
+//        Topic errors = new Topic(outputTopic, stringSerde, errorSerde);
+
         KStream<String, Transaction> transactionStream = builder.stream(inputTopic);
         KStream<String, Transaction>[] validatedTransactions = transactionStream.branch(
                 (k, v) -> transactionValidator.isKeyBad(k),

@@ -1,4 +1,4 @@
-package com.doinkey.cg.domain;
+package com.doinkey.cg.app.domain;
 
 public class TransactionValidator {
     public final static String BAD_KEY_MESSAGE = "That key was BAD";

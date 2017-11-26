@@ -1,7 +1,7 @@
-package com.doinkey.cg.domain;
+package com.doinkey.cg.app.domain;
 
-import com.doinkey.cg.Charge;
-import com.doinkey.cg.Transaction;
+import com.doinkey.cg.app.Charge;
+import com.doinkey.cg.app.Transaction;
 
 public class ChargeCalculator {
     public Charge calculate(Transaction t) {

@@ -1,9 +1,8 @@
-package com.doinkey.cg;
+package com.doinkey.cg.app;
 
-import com.doinkey.cg.domain.ChargeCalculator;
-import com.doinkey.cg.domain.TransactionValidator;
-import com.doinkey.cg.streams.ChargeStream;
-import com.doinkey.cg.streams.StreamPropertiesBuilder;
+import com.doinkey.cg.app.domain.ChargeCalculator;
+import com.doinkey.cg.config.StreamPropertiesBuilder;
+import com.doinkey.cg.app.domain.TransactionValidator;
 import io.confluent.examples.streams.IntegrationTestUtils;
 import io.confluent.examples.streams.kafka.EmbeddedSingleNodeKafkaCluster;
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
@@ -34,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 public class ChargeStreamIntegrationTest {
 
     @ClassRule
-    public static EmbeddedSingleNodeKafkaCluster CLUSTER;
+    public static EmbeddedSingleNodeKafkaCluster CLUSTER = new EmbeddedSingleNodeKafkaCluster();
 
     // WARNING: if using real kafka, please create topics using create-topics-for-tests.sh
     // to ensure replication factor is 1
@@ -59,7 +58,6 @@ public class ChargeStreamIntegrationTest {
         String bootstrapServers;
         String registryUrl;
         if (USE_EMBEDDED_KAFKA) {
-            CLUSTER = new EmbeddedSingleNodeKafkaCluster();
             CLUSTER.createTopic(INPUT_TOPIC);
             CLUSTER.createTopic(OUTPUT_TOPIC);
 
@@ -82,7 +80,7 @@ public class ChargeStreamIntegrationTest {
                         registryUrl);
 
         TRANSACTION_SCHEMA = new Schema.Parser().parse(
-                ChargeStreamIntegrationTest.class.getResourceAsStream("/com/doinkey/cg/transaction.avsc"));
+                ChargeStreamIntegrationTest.class.getResourceAsStream("/com/doinkey/cg/app/transaction.avsc"));
     }
 
     @Test

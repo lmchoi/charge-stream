@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# PLEASE CHANGE ME
 CONFLUENT_HOME=/opt/confluent-3.3.1
 
 ${CONFLUENT_HOME}/bin/kafka-console-consumer \

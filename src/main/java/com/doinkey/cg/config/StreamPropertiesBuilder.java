@@ -1,6 +1,5 @@
-package com.doinkey.cg.streams;
+package com.doinkey.cg.config;
 
-import com.doinkey.cg.config.StreamsConfiguration;
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import org.apache.kafka.clients.consumer.ConsumerConfig;

@@ -1,6 +1,6 @@
-{"namespace": "com.doinkey.cg",
+{"namespace": "com.doinkey.cg.app",
  "type": "record",
- "name": "Transaction",
+ "name": "Charge",
  "fields": [
      {"name": "txn_id", "type": "string"}
  ]
