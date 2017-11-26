@@ -1,0 +1,8 @@
+{"namespace": "com.doinkey.cg",
+ "type": "record",
+ "name": "FailedTransaction",
+ "fields": [
+     {"name": "txn_id", "type": "string"},
+     {"name": "error", "type": "string"}
+ ]
+}

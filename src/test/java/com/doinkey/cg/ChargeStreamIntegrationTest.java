@@ -35,6 +35,7 @@ public class ChargeStreamIntegrationTest {
 
     private static String inputTopic = "transaction-topic";
     private static String outputTopic = "charge-topic";
+    private static String errorTopic = "failed-transactions";
 
     private Properties producerConfig;
     private Properties consumerConfig;
@@ -63,12 +64,12 @@ public class ChargeStreamIntegrationTest {
     }
 
     @Test
-    public void shouldRoundTripGenericAvroDataThroughKafka() throws Exception {
+    public void transactionShouldPassThroughToCharge() throws Exception {
         //
         // Step 1: Configure and start the processor topology.
         //
         ChargeStream streams = new ChargeStream();
-        streams.start(chargeStreamConfig, inputTopic, outputTopic);
+        streams.start(chargeStreamConfig, inputTopic, outputTopic, errorTopic);
 
         //
         // Step 2: Produce some input data to the input topic.
@@ -77,7 +78,7 @@ public class ChargeStreamIntegrationTest {
                 getClass().getResourceAsStream("/com/doinkey/cg/transaction.avsc"));
         GenericRecord record = new GenericData.Record(schema);
         record.put("txn_id", "lulz");
-        List<KeyValue<String, GenericRecord>> inputValues = Collections.singletonList(new KeyValue<>("much", record));
+        List<KeyValue<String, GenericRecord>> inputValues = Collections.singletonList(new KeyValue<>("9999", record));
 
         IntegrationTestUtils.produceKeyValuesSynchronously(inputTopic, inputValues, producerConfig);
 
@@ -88,6 +89,37 @@ public class ChargeStreamIntegrationTest {
                 outputTopic, inputValues.size());
         streams.stop();
         assertEquals(inputValues.get(0).value.get("txn_id"), actualValues.get(0).value.get("txn_id"));
+    }
+
+    @Test
+    public void transactionWithInvalidIdShouldGoToErrorTopic() throws Exception {
+        String invalidId = "1337";
+
+        //
+        // Step 1: Configure and start the processor topology.
+        //
+        ChargeStream streams = new ChargeStream();
+        streams.start(chargeStreamConfig, inputTopic, outputTopic, errorTopic);
+
+        //
+        // Step 2: Produce some input data to the input topic.
+        //
+        Schema schema = new Schema.Parser().parse(
+                getClass().getResourceAsStream("/com/doinkey/cg/transaction.avsc"));
+        GenericRecord record = new GenericData.Record(schema);
+        record.put("txn_id", "lulz");
+        List<KeyValue<String, GenericRecord>> inputValues = Collections.singletonList(new KeyValue<>(invalidId, record));
+
+        IntegrationTestUtils.produceKeyValuesSynchronously(inputTopic, inputValues, producerConfig);
+
+        //
+        // Step 3: Verify the application's output data.
+        //
+        List<KeyValue<String, GenericRecord>> actualValues = IntegrationTestUtils.waitUntilMinKeyValueRecordsReceived(consumerConfig,
+                errorTopic, inputValues.size());
+        streams.stop();
+        assertEquals(inputValues.get(0).value.get("txn_id"), actualValues.get(0).value.get("txn_id"));
+        assertEquals("Not 1337 enough...", actualValues.get(0).value.get("error"));
     }
 
     private Properties createProducerConfig(String bootstrapServers, String registryUrl) {

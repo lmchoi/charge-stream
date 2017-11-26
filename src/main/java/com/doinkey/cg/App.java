@@ -27,7 +27,7 @@ public class App
                         bootstrapServers,
                         schemaRegistryUrl);
 
-        chargeStream.start(streamsConfiguration, "transaction-topic", "charge-topic");
+        chargeStream.start(streamsConfiguration, "transaction-topic", "charge-topic", "failed-transactions");
         addShutdownHookAndBlock(chargeStream);
     }
 }
