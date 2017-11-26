@@ -34,11 +34,15 @@ import static org.junit.Assert.assertEquals;
 public class ChargeStreamIntegrationTest {
 
     @ClassRule
-    public static final EmbeddedSingleNodeKafkaCluster CLUSTER = new EmbeddedSingleNodeKafkaCluster();
+    public static EmbeddedSingleNodeKafkaCluster CLUSTER;
 
-    private static String INPUT_TOPIC = "transaction-topic";
-    private static String OUTPUT_TOPIC = "charge-topic";
-    private static String ERROR_TOPIC = "failed-transactions";
+    // WARNING: if using real kafka, please create topics using create-topics-for-tests.sh
+    // to ensure replication factor is 1
+    private final static boolean USE_EMBEDDED_KAFKA = true;
+
+    private static String INPUT_TOPIC = "transactions-test";
+    private static String OUTPUT_TOPIC = "charges-test";
+    private static String ERROR_TOPIC = "failed-transactions-test";
     private static Schema TRANSACTION_SCHEMA;
 
     private static Properties PRODUCER_CONFIG;
@@ -51,11 +55,20 @@ public class ChargeStreamIntegrationTest {
 
     @BeforeClass
     public static void startKafkaCluster() throws Exception {
-        CLUSTER.createTopic(INPUT_TOPIC);
-        CLUSTER.createTopic(OUTPUT_TOPIC);
 
-        String bootstrapServers = CLUSTER.bootstrapServers();
-        String registryUrl = CLUSTER.schemaRegistryUrl();
+        String bootstrapServers;
+        String registryUrl;
+        if (USE_EMBEDDED_KAFKA) {
+            CLUSTER = new EmbeddedSingleNodeKafkaCluster();
+            CLUSTER.createTopic(INPUT_TOPIC);
+            CLUSTER.createTopic(OUTPUT_TOPIC);
+
+            bootstrapServers = CLUSTER.bootstrapServers();
+            registryUrl = CLUSTER.schemaRegistryUrl();
+        } else {
+            bootstrapServers = "localhost:9092";
+            registryUrl = "http://localhost:8081";
+        }
 
         // producer for test input
         PRODUCER_CONFIG = createProducerConfig(bootstrapServers, registryUrl);
