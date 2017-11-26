@@ -160,7 +160,7 @@
               <goal>schema</goal>
             </goals>
             <configuration>
-              <sourceDirectory>src/main/resources/avro/io/confluent/examples/streams</sourceDirectory>
+              <sourceDirectory>src/main/resources/com/doinkey/cg</sourceDirectory>
               <outputDirectory>${project.build.directory}/generated-sources</outputDirectory>
               <stringType>String</stringType>
             </configuration>
