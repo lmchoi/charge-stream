@@ -1,0 +1,5 @@
+chargeStream:
+  applicationId: "charge-stream"
+  bootstrapServers:
+    - "localhost:9092"
+  schemaRegistryUrl: "http://localhost:8081"

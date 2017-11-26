@@ -1,5 +1,6 @@
-package com.doinkey.cg;
+package com.doinkey.cg.streams;
 
+import com.doinkey.cg.config.StreamsConfiguration;
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -8,10 +9,17 @@ import org.apache.kafka.streams.StreamsConfig;
 
 import java.util.Properties;
 
-public class StreamsConfiguration {
-    public static Properties buildConfiguration(String applicationId,
-                                                String bootstrapServers,
-                                                String schemaRegistryUrl) {
+public class StreamPropertiesBuilder {
+    public static Properties build(StreamsConfiguration streamsConfiguration) {
+        return build(
+                streamsConfiguration.getApplicationId(),
+                String.join(",", streamsConfiguration.getBootstrapServers()),
+                streamsConfiguration.getSchemaRegistryUrl());
+    }
+
+    public static Properties build(String applicationId,
+                                   String bootstrapServers,
+                                   String schemaRegistryUrl) {
         Properties streamsConfiguration = new Properties();
         streamsConfiguration.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
         streamsConfiguration.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);

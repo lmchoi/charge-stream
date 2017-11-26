@@ -1,5 +1,8 @@
 package com.doinkey.cg;
 
+import com.doinkey.cg.domain.TransactionValidator;
+import com.doinkey.cg.streams.ChargeStream;
+import com.doinkey.cg.streams.StreamPropertiesBuilder;
 import io.confluent.examples.streams.IntegrationTestUtils;
 import io.confluent.examples.streams.kafka.EmbeddedSingleNodeKafkaCluster;
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
@@ -56,9 +59,8 @@ public class ChargeStreamIntegrationTest {
         CONSUMER_CONFIG = createConsumerConfig(bootstrapServers, registryUrl);
 
         // stream being tested
-        CHARGE_STREAM_CONFIG = StreamsConfiguration
-                .buildConfiguration(
-                        "generic-avro-integration-test",
+        CHARGE_STREAM_CONFIG = StreamPropertiesBuilder
+                .build("generic-avro-integration-test",
                         bootstrapServers,
                         registryUrl);
 

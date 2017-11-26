@@ -1,5 +1,8 @@
-package com.doinkey.cg;
+package com.doinkey.cg.streams;
 
+import com.doinkey.cg.*;
+import com.doinkey.cg.domain.ChargeCalculator;
+import com.doinkey.cg.domain.TransactionValidator;
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import org.apache.kafka.common.serialization.Serde;
