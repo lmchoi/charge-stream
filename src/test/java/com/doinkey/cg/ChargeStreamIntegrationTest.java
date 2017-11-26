@@ -13,7 +13,6 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KeyValue;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -33,63 +32,57 @@ public class ChargeStreamIntegrationTest {
     @ClassRule
     public static final EmbeddedSingleNodeKafkaCluster CLUSTER = new EmbeddedSingleNodeKafkaCluster();
 
-    private static String inputTopic = "transaction-topic";
-    private static String outputTopic = "charge-topic";
-    private static String errorTopic = "failed-transactions";
+    private static String INPUT_TOPIC = "transaction-topic";
+    private static String OUTPUT_TOPIC = "charge-topic";
+    private static String ERROR_TOPIC = "failed-transactions";
     private static Schema TRANSACTION_SCHEMA;
 
-    private Properties producerConfig;
-    private Properties consumerConfig;
+    private static Properties PRODUCER_CONFIG;
+    private static Properties CONSUMER_CONFIG;
 
-    private Properties chargeStreamConfig;
+    private static Properties CHARGE_STREAM_CONFIG;
 
     @BeforeClass
     public static void startKafkaCluster() throws Exception {
-        CLUSTER.createTopic(inputTopic);
-        CLUSTER.createTopic(outputTopic);
-    }
+        CLUSTER.createTopic(INPUT_TOPIC);
+        CLUSTER.createTopic(OUTPUT_TOPIC);
 
-    @Before
-    public void setUp() throws Exception {
         String bootstrapServers = CLUSTER.bootstrapServers();
         String registryUrl = CLUSTER.schemaRegistryUrl();
 
-        producerConfig = createProducerConfig(bootstrapServers, registryUrl);
-        consumerConfig = createConsumerConfig(bootstrapServers, registryUrl);
+        // producer for test input
+        PRODUCER_CONFIG = createProducerConfig(bootstrapServers, registryUrl);
+        // consumer for test output
+        CONSUMER_CONFIG = createConsumerConfig(bootstrapServers, registryUrl);
 
-        chargeStreamConfig = StreamsConfiguration
+        // stream being tested
+        CHARGE_STREAM_CONFIG = StreamsConfiguration
                 .buildConfiguration(
                         "generic-avro-integration-test",
                         bootstrapServers,
                         registryUrl);
 
         TRANSACTION_SCHEMA = new Schema.Parser().parse(
-                getClass().getResourceAsStream("/com/doinkey/cg/transaction.avsc"));
+                ChargeStreamIntegrationTest.class.getResourceAsStream("/com/doinkey/cg/transaction.avsc"));
     }
 
     @Test
     public void transactionShouldPassThroughToCharge() throws Exception {
         String validId = "good";
 
-        //
         // Step 1: Configure and start the processor topology.
-        //
         ChargeStream streams = new ChargeStream();
-        streams.start(chargeStreamConfig, inputTopic, outputTopic, errorTopic);
+        streams.start(CHARGE_STREAM_CONFIG, INPUT_TOPIC, OUTPUT_TOPIC, ERROR_TOPIC);
 
-        //
         // Step 2: Produce some input data to the input topic.
-        //
         GenericRecord record = new GenericData.Record(TRANSACTION_SCHEMA);
         record.put("txn_id", "lulz");
         List<KeyValue<String, GenericRecord>> inputValues = Collections.singletonList(new KeyValue<>(validId, record));
-        IntegrationTestUtils.produceKeyValuesSynchronously(inputTopic, inputValues, producerConfig);
+        IntegrationTestUtils.produceKeyValuesSynchronously(INPUT_TOPIC, inputValues, PRODUCER_CONFIG);
 
-        //
         // Step 3: Verify the application's output data.
-        //
-        List<KeyValue<String, GenericRecord>> actualValues = IntegrationTestUtils.waitUntilMinKeyValueRecordsReceived(consumerConfig,
-                outputTopic, inputValues.size());
+        List<KeyValue<String, GenericRecord>> actualValues = IntegrationTestUtils.waitUntilMinKeyValueRecordsReceived(CONSUMER_CONFIG,
+                OUTPUT_TOPIC, inputValues.size());
         streams.stop();
         assertEquals(inputValues.get(0).value.get("txn_id"), actualValues.get(0).value.get("txn_id"));
     }
@@ -98,31 +91,25 @@ public class ChargeStreamIntegrationTest {
     public void transactionWithInvalidIdShouldGoToErrorTopic() throws Exception {
         String invalidId = "bad";
 
-        //
         // Step 1: Configure and start the processor topology.
-        //
         ChargeStream streams = new ChargeStream();
-        streams.start(chargeStreamConfig, inputTopic, outputTopic, errorTopic);
+        streams.start(CHARGE_STREAM_CONFIG, INPUT_TOPIC, OUTPUT_TOPIC, ERROR_TOPIC);
 
-        //
         // Step 2: Produce some input data to the input topic.
-        //
         GenericRecord record = new GenericData.Record(TRANSACTION_SCHEMA);
         record.put("txn_id", "lulz");
         List<KeyValue<String, GenericRecord>> inputValues = Collections.singletonList(new KeyValue<>(invalidId, record));
-        IntegrationTestUtils.produceKeyValuesSynchronously(inputTopic, inputValues, producerConfig);
+        IntegrationTestUtils.produceKeyValuesSynchronously(INPUT_TOPIC, inputValues, PRODUCER_CONFIG);
 
-        //
         // Step 3: Verify the application's output data.
-        //
-        List<KeyValue<String, GenericRecord>> actualValues = IntegrationTestUtils.waitUntilMinKeyValueRecordsReceived(consumerConfig,
-                errorTopic, inputValues.size());
+        List<KeyValue<String, GenericRecord>> actualValues = IntegrationTestUtils.waitUntilMinKeyValueRecordsReceived(CONSUMER_CONFIG,
+                ERROR_TOPIC, inputValues.size());
         streams.stop();
         assertEquals(inputValues.get(0).value.get("txn_id"), actualValues.get(0).value.get("txn_id"));
-        assertEquals("That key was BAD", actualValues.get(0).value.get("error"));
+        assertEquals(TransactionValidator.BAD_KEY_MESSAGE, actualValues.get(0).value.get("error"));
     }
 
-    private Properties createProducerConfig(String bootstrapServers, String registryUrl) {
+    private static Properties createProducerConfig(String bootstrapServers, String registryUrl) {
         Properties producerConfig = new Properties();
         producerConfig.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         producerConfig.put(ProducerConfig.ACKS_CONFIG, "all");
@@ -133,7 +120,7 @@ public class ChargeStreamIntegrationTest {
         return producerConfig;
     }
 
-    private Properties createConsumerConfig(String bootstrapServers, String registryUrl) {
+    private static Properties createConsumerConfig(String bootstrapServers, String registryUrl) {
         Properties consumerConfig = new Properties();
         consumerConfig.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         consumerConfig.put(ConsumerConfig.GROUP_ID_CONFIG, "generic-avro-integration-test-standard-consumer");

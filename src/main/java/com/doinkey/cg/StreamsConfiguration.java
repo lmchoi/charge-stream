@@ -19,7 +19,10 @@ public class StreamsConfiguration {
         streamsConfiguration.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, SpecificAvroSerde.class);
         streamsConfiguration.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
         streamsConfiguration.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        // TODO set REPLICATION_FACTOR_CONFIG
+
+        // TODO need to revisit the configs [See https://kafka.apache.org/documentation/#streamsconfigs]
+//        streamsConfiguration.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, "exactly_once");
+//        streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 100);
 //        streamsConfiguration.put(StreamsConfig.REPLICATION_FACTOR_CONFIG, 3);
         return streamsConfiguration;
     }
