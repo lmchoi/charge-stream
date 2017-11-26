@@ -19,25 +19,32 @@ public class ChargeStream {
 
     private KafkaStreams streams;
     private SpecificAvroSerde<Charge> chargeSerde = new SpecificAvroSerde<>();
-    private SpecificAvroSerde<FailedTransaction> errorSerde = new SpecificAvroSerde();
+    private SpecificAvroSerde<FailedTransaction> errorSerde = new SpecificAvroSerde<>();
 
-    private TransactionValidator transactionValidator;
-    private ChargeCalculator chargeCalculator;
+    private final TransactionValidator transactionValidator;
+    private final ChargeCalculator chargeCalculator;
+
+    public ChargeStream(TransactionValidator transactionValidator, ChargeCalculator chargeCalculator) {
+        this.transactionValidator = transactionValidator;
+        this.chargeCalculator = chargeCalculator;
+    }
 
     public void start(Properties streamsConfiguration, String inputTopic, String outputTopic, String errorTopic) {
-        processStreams(streamsConfiguration, inputTopic, outputTopic, errorTopic);
+        streams = createProcessTopology(streamsConfiguration, inputTopic, outputTopic, errorTopic);
+
+        // TODO consider creating Topic class and move these out
         Map<String, String> serdeConfig = Collections.singletonMap(
                 AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
                 streamsConfiguration.getProperty(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG));
         chargeSerde.configure(serdeConfig, false);
         errorSerde.configure(serdeConfig, false);
 
-        transactionValidator = new TransactionValidator();
-        chargeCalculator = new ChargeCalculator();
-        streams.start();
+        if (streams != null) {
+            streams.start();
+        }
     }
 
-    private void processStreams(Properties streamsConfiguration, String inputTopic, String outputTopic, String errorTopic) {
+    private KafkaStreams createProcessTopology(Properties streamsConfiguration, String inputTopic, String outputTopic, String errorTopic) {
         KStreamBuilder builder = new KStreamBuilder();
 
         final Serde<String> stringSerde = Serdes.String();
@@ -52,7 +59,7 @@ public class ChargeStream {
         validatedTransactions[1].mapValues(t -> chargeCalculator.calculate(t))
                 .to(stringSerde, chargeSerde, outputTopic);
 
-        streams = new KafkaStreams(builder, streamsConfiguration);
+        return new KafkaStreams(builder, streamsConfiguration);
     }
 
     public void stop() {

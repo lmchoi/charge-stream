@@ -2,6 +2,8 @@ package com.doinkey.cg;
 
 import com.doinkey.cg.config.Configuration;
 import com.doinkey.cg.config.ConfigurationLoader;
+import com.doinkey.cg.domain.ChargeCalculator;
+import com.doinkey.cg.domain.TransactionValidator;
 import com.doinkey.cg.streams.ChargeStream;
 import com.doinkey.cg.streams.StreamPropertiesBuilder;
 
@@ -23,11 +25,17 @@ public class App
     public static void main( String[] args ) throws InterruptedException {
         String configFilename = args[0];
 
+        // read config
         ConfigurationLoader configurationLoader = new ConfigurationLoader();
         Configuration config = configurationLoader.load(configFilename);
         Properties chargeStreamProperties = StreamPropertiesBuilder.build(config.getChargeStream());
 
-        ChargeStream chargeStream = new ChargeStream();
+        // create the charge stream
+        TransactionValidator transactionValidator = new TransactionValidator();
+        ChargeCalculator chargeCalculator = new ChargeCalculator();
+        ChargeStream chargeStream = new ChargeStream(transactionValidator, chargeCalculator);
+
+        // start processing
         chargeStream.start(chargeStreamProperties, "transaction-topic", "charge-topic", "failed-transactions");
         addShutdownHookAndBlock(chargeStream);
     }

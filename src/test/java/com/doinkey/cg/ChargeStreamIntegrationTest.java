@@ -1,5 +1,6 @@
 package com.doinkey.cg;
 
+import com.doinkey.cg.domain.ChargeCalculator;
 import com.doinkey.cg.domain.TransactionValidator;
 import com.doinkey.cg.streams.ChargeStream;
 import com.doinkey.cg.streams.StreamPropertiesBuilder;
@@ -45,6 +46,9 @@ public class ChargeStreamIntegrationTest {
 
     private static Properties CHARGE_STREAM_CONFIG;
 
+    private final TransactionValidator transactionValidator = new TransactionValidator();
+    private final ChargeCalculator chargeCalculator = new ChargeCalculator();
+
     @BeforeClass
     public static void startKafkaCluster() throws Exception {
         CLUSTER.createTopic(INPUT_TOPIC);
@@ -73,7 +77,7 @@ public class ChargeStreamIntegrationTest {
         String validId = "good";
 
         // Step 1: Configure and start the processor topology.
-        ChargeStream streams = new ChargeStream();
+        ChargeStream streams = new ChargeStream(transactionValidator, chargeCalculator);
         streams.start(CHARGE_STREAM_CONFIG, INPUT_TOPIC, OUTPUT_TOPIC, ERROR_TOPIC);
 
         // Step 2: Produce some input data to the input topic.
@@ -94,7 +98,7 @@ public class ChargeStreamIntegrationTest {
         String invalidId = "bad";
 
         // Step 1: Configure and start the processor topology.
-        ChargeStream streams = new ChargeStream();
+        ChargeStream streams = new ChargeStream(transactionValidator, chargeCalculator);
         streams.start(CHARGE_STREAM_CONFIG, INPUT_TOPIC, OUTPUT_TOPIC, ERROR_TOPIC);
 
         // Step 2: Produce some input data to the input topic.
