@@ -13,6 +13,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KeyValue;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -35,38 +36,61 @@ public class ChargeStreamIntegrationTest {
     private static String inputTopic = "transaction-topic";
     private static String outputTopic = "charge-topic";
 
+    private Properties producerConfig;
+    private Properties consumerConfig;
+
+    private Properties chargeStreamConfig;
+
     @BeforeClass
     public static void startKafkaCluster() throws Exception {
         CLUSTER.createTopic(inputTopic);
         CLUSTER.createTopic(outputTopic);
     }
 
+    @Before
+    public void setUp() throws Exception {
+        String bootstrapServers = CLUSTER.bootstrapServers();
+        String registryUrl = CLUSTER.schemaRegistryUrl();
+
+        producerConfig = createProducerConfig(bootstrapServers, registryUrl);
+        consumerConfig = createConsumerConfig(bootstrapServers, registryUrl);
+
+        chargeStreamConfig = StreamsConfiguration
+                .buildConfiguration(
+                        "generic-avro-integration-test",
+                        bootstrapServers,
+                        registryUrl);
+    }
+
     @Test
     public void shouldRoundTripGenericAvroDataThroughKafka() throws Exception {
-        // create test data
+        //
+        // Step 1: Configure and start the processor topology.
+        //
+        ChargeStream streams = new ChargeStream();
+        streams.start(chargeStreamConfig, inputTopic, outputTopic);
+
+        //
+        // Step 2: Produce some input data to the input topic.
+        //
         Schema schema = new Schema.Parser().parse(
                 getClass().getResourceAsStream("/com/doinkey/cg/transaction.avsc"));
         GenericRecord record = new GenericData.Record(schema);
         record.put("txn_id", "lulz");
         List<KeyValue<String, GenericRecord>> inputValues = Collections.singletonList(new KeyValue<>("much", record));
 
-        //
-        // Step 1: Configure and start the processor topology.
-        //
-
-        String bootstrapServers = CLUSTER.bootstrapServers();
-        String registryUrl = CLUSTER.schemaRegistryUrl();
-        Properties properties = StreamsConfiguration
-                .buildConfiguration(
-                        "generic-avro-integration-test",
-                        bootstrapServers,
-                        registryUrl);
-        ChargeStream streams = new ChargeStream();
-        streams.start(properties, inputTopic, outputTopic);
+        IntegrationTestUtils.produceKeyValuesSynchronously(inputTopic, inputValues, producerConfig);
 
         //
-        // Step 2: Produce some input data to the input topic.
+        // Step 3: Verify the application's output data.
         //
+        List<KeyValue<String, GenericRecord>> actualValues = IntegrationTestUtils.waitUntilMinKeyValueRecordsReceived(consumerConfig,
+                outputTopic, inputValues.size());
+        streams.stop();
+        assertEquals(inputValues.get(0).value.get("txn_id"), actualValues.get(0).value.get("txn_id"));
+    }
+
+    private Properties createProducerConfig(String bootstrapServers, String registryUrl) {
         Properties producerConfig = new Properties();
         producerConfig.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         producerConfig.put(ProducerConfig.ACKS_CONFIG, "all");
@@ -74,11 +98,10 @@ public class ChargeStreamIntegrationTest {
         producerConfig.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         producerConfig.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
         producerConfig.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, registryUrl);
-        IntegrationTestUtils.produceKeyValuesSynchronously(inputTopic, inputValues, producerConfig);
+        return producerConfig;
+    }
 
-        //
-        // Step 3: Verify the application's output data.
-        //
+    private Properties createConsumerConfig(String bootstrapServers, String registryUrl) {
         Properties consumerConfig = new Properties();
         consumerConfig.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         consumerConfig.put(ConsumerConfig.GROUP_ID_CONFIG, "generic-avro-integration-test-standard-consumer");
@@ -86,9 +109,6 @@ public class ChargeStreamIntegrationTest {
         consumerConfig.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         consumerConfig.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class);
         consumerConfig.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, registryUrl);
-        List<KeyValue<String, GenericRecord>> actualValues = IntegrationTestUtils.waitUntilMinKeyValueRecordsReceived(consumerConfig,
-                outputTopic, inputValues.size());
-        streams.stop();
-        assertEquals(inputValues.get(0).value.get("txn_id"), actualValues.get(0).value.get("txn_id"));
+        return consumerConfig;
     }
 }
