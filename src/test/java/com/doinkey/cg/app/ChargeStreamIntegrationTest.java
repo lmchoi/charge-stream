@@ -1,6 +1,5 @@
 package com.doinkey.cg.app;
 
-import com.doinkey.cg.app.domain.ChargeCalculator;
 import com.doinkey.cg.config.StreamPropertiesBuilder;
 import com.doinkey.cg.app.domain.TransactionValidator;
 import io.confluent.examples.streams.IntegrationTestUtils;
@@ -49,9 +48,6 @@ public class ChargeStreamIntegrationTest {
 
     private static Properties CHARGE_STREAM_CONFIG;
 
-    private final TransactionValidator transactionValidator = new TransactionValidator();
-    private final ChargeCalculator chargeCalculator = new ChargeCalculator();
-
     @BeforeClass
     public static void startKafkaCluster() throws Exception {
 
@@ -89,8 +85,8 @@ public class ChargeStreamIntegrationTest {
         String validId = "good";
 
         // Step 1: Configure and start the processor topology.
-        ChargeStream streams = new ChargeStream(transactionValidator, chargeCalculator);
-        streams.start(CHARGE_STREAM_CONFIG, INPUT_TOPIC, OUTPUT_TOPIC, ERROR_TOPIC);
+        ChargeService streams = new ChargeService(CHARGE_STREAM_CONFIG, INPUT_TOPIC, OUTPUT_TOPIC, ERROR_TOPIC);
+        streams.start();
 
         // Step 2: Produce some input data to the input topic.
         GenericRecord record = new GenericData.Record(TRANSACTION_SCHEMA);
@@ -110,8 +106,8 @@ public class ChargeStreamIntegrationTest {
         String invalidId = "bad";
 
         // Step 1: Configure and start the processor topology.
-        ChargeStream streams = new ChargeStream(transactionValidator, chargeCalculator);
-        streams.start(CHARGE_STREAM_CONFIG, INPUT_TOPIC, OUTPUT_TOPIC, ERROR_TOPIC);
+        ChargeService streams = new ChargeService(CHARGE_STREAM_CONFIG, INPUT_TOPIC, OUTPUT_TOPIC, ERROR_TOPIC);
+        streams.start();
 
         // Step 2: Produce some input data to the input topic.
         GenericRecord record = new GenericData.Record(TRANSACTION_SCHEMA);

@@ -18,11 +18,12 @@ public class App
         Properties chargeStreamProperties = StreamPropertiesBuilder.build(config.getChargeStream());
 
         // TODO where should these go??
+        String inputTopic = "transaction-topic";
         String outputTopic = "charge-topic";
         String errorTopic = "failed-transactions";
 
         // forgive me for my lack of creativity with the naming...
-        ChargeService chargeService = new ChargeService(chargeStreamProperties, outputTopic, errorTopic);
+        ChargeService chargeService = new ChargeService(chargeStreamProperties, inputTopic, outputTopic, errorTopic);
         chargeService.start();
         Runtime.getRuntime().addShutdownHook(new Thread(chargeService::stop));
     }
