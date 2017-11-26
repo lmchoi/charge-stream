@@ -18,6 +18,9 @@ public class ChargeStream {
     private SpecificAvroSerde<Charge> chargeSerde = new SpecificAvroSerde<>();
     private SpecificAvroSerde<FailedTransaction> errorSerde = new SpecificAvroSerde();
 
+    private TransactionValidator transactionValidator;
+    private ChargeCalculator chargeCalculator;
+
     public void start(Properties streamsConfiguration, String inputTopic, String outputTopic, String errorTopic) {
         processStreams(streamsConfiguration, inputTopic, outputTopic, errorTopic);
         Map<String, String> serdeConfig = Collections.singletonMap(
@@ -25,6 +28,9 @@ public class ChargeStream {
                 streamsConfiguration.getProperty(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG));
         chargeSerde.configure(serdeConfig, false);
         errorSerde.configure(serdeConfig, false);
+
+        transactionValidator = new TransactionValidator();
+        chargeCalculator = new ChargeCalculator();
         streams.start();
     }
 
@@ -34,15 +40,14 @@ public class ChargeStream {
         final Serde<String> stringSerde = Serdes.String();
         KStream<String, Transaction> transactionStream = builder.stream(inputTopic);
         KStream<String, Transaction>[] validatedTransactions = transactionStream.branch(
-                (k, v) -> !"1337".equals(k),
+                (k, v) -> transactionValidator.isKeyBad(k),
                 (k, v) -> true);
 
-        validatedTransactions[0].mapValues(t -> new Charge(t.getTxnId()))
-                .to(stringSerde, chargeSerde, outputTopic);
-
-        validatedTransactions[1].mapValues(t -> new FailedTransaction(t.getTxnId(), "Not 1337 enough..."))
+        validatedTransactions[0].mapValues(t -> new FailedTransaction(t.getTxnId(), TransactionValidator.BAD_KEY_MESSAGE))
                 .to(stringSerde, errorSerde, errorTopic);
 
+        validatedTransactions[1].mapValues(t -> chargeCalculator.calculate(t))
+                .to(stringSerde, chargeSerde, outputTopic);
 
         streams = new KafkaStreams(builder, streamsConfiguration);
     }

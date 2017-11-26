@@ -36,6 +36,7 @@ public class ChargeStreamIntegrationTest {
     private static String inputTopic = "transaction-topic";
     private static String outputTopic = "charge-topic";
     private static String errorTopic = "failed-transactions";
+    private static Schema TRANSACTION_SCHEMA;
 
     private Properties producerConfig;
     private Properties consumerConfig;
@@ -61,10 +62,15 @@ public class ChargeStreamIntegrationTest {
                         "generic-avro-integration-test",
                         bootstrapServers,
                         registryUrl);
+
+        TRANSACTION_SCHEMA = new Schema.Parser().parse(
+                getClass().getResourceAsStream("/com/doinkey/cg/transaction.avsc"));
     }
 
     @Test
     public void transactionShouldPassThroughToCharge() throws Exception {
+        String validId = "good";
+
         //
         // Step 1: Configure and start the processor topology.
         //
@@ -74,12 +80,9 @@ public class ChargeStreamIntegrationTest {
         //
         // Step 2: Produce some input data to the input topic.
         //
-        Schema schema = new Schema.Parser().parse(
-                getClass().getResourceAsStream("/com/doinkey/cg/transaction.avsc"));
-        GenericRecord record = new GenericData.Record(schema);
+        GenericRecord record = new GenericData.Record(TRANSACTION_SCHEMA);
         record.put("txn_id", "lulz");
-        List<KeyValue<String, GenericRecord>> inputValues = Collections.singletonList(new KeyValue<>("9999", record));
-
+        List<KeyValue<String, GenericRecord>> inputValues = Collections.singletonList(new KeyValue<>(validId, record));
         IntegrationTestUtils.produceKeyValuesSynchronously(inputTopic, inputValues, producerConfig);
 
         //
@@ -93,7 +96,7 @@ public class ChargeStreamIntegrationTest {
 
     @Test
     public void transactionWithInvalidIdShouldGoToErrorTopic() throws Exception {
-        String invalidId = "1337";
+        String invalidId = "bad";
 
         //
         // Step 1: Configure and start the processor topology.
@@ -104,12 +107,9 @@ public class ChargeStreamIntegrationTest {
         //
         // Step 2: Produce some input data to the input topic.
         //
-        Schema schema = new Schema.Parser().parse(
-                getClass().getResourceAsStream("/com/doinkey/cg/transaction.avsc"));
-        GenericRecord record = new GenericData.Record(schema);
+        GenericRecord record = new GenericData.Record(TRANSACTION_SCHEMA);
         record.put("txn_id", "lulz");
         List<KeyValue<String, GenericRecord>> inputValues = Collections.singletonList(new KeyValue<>(invalidId, record));
-
         IntegrationTestUtils.produceKeyValuesSynchronously(inputTopic, inputValues, producerConfig);
 
         //
@@ -119,7 +119,7 @@ public class ChargeStreamIntegrationTest {
                 errorTopic, inputValues.size());
         streams.stop();
         assertEquals(inputValues.get(0).value.get("txn_id"), actualValues.get(0).value.get("txn_id"));
-        assertEquals("Not 1337 enough...", actualValues.get(0).value.get("error"));
+        assertEquals("That key was BAD", actualValues.get(0).value.get("error"));
     }
 
     private Properties createProducerConfig(String bootstrapServers, String registryUrl) {
