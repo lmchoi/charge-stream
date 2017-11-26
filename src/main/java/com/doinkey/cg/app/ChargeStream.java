@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 
+// TODO extract charge specific code and make this a generic avro transform stream
 public class ChargeStream {
 
     private KafkaStreams streams;
