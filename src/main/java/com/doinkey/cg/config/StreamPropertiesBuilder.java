@@ -29,7 +29,7 @@ public class StreamPropertiesBuilder {
 
         // TODO need to revisit the configs [See https://kafka.apache.org/documentation/#streamsconfigs]
 //        streamsConfiguration.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, "exactly_once");
-//        streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 100);
+        streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 100);
 //        streamsConfiguration.put(StreamsConfig.REPLICATION_FACTOR_CONFIG, 3);
         return streamsConfiguration;
     }

@@ -11,36 +11,28 @@ public class ChargeService {
     private final String outputTopic;
     private final String errorTopic;
 
-    public ChargeService(Properties chargeStreamProperties) {
+    public ChargeService(Properties chargeStreamProperties, String outputTopic, String errorTopic) {
         this.chargeStreamProperties = chargeStreamProperties;
+        this.outputTopic = outputTopic;
+        this.errorTopic = errorTopic;
 
         TransactionValidator transactionValidator = new TransactionValidator();
         ChargeCalculator chargeCalculator = new ChargeCalculator();
         chargeStream = new ChargeStream(transactionValidator, chargeCalculator);
 
-        // Create topics
+        // TODO where does topic creation belong? here? or when the topology is created?
 //        Serde<String> stringSerde = Serdes.String();
 //        SpecificAvroSerde<Charge> chargeSerde = new SpecificAvroSerde<>();
 //        SpecificAvroSerde<FailedTransaction> errorSerde = new SpecificAvroSerde<>();
-        outputTopic = "charge-topic";
-        errorTopic = "failed-transactions";
+//        Topic charges = new Topic(outputTopic, stringSerde, chargeSerde);
+//        Topic errors = new Topic(errorTopic, stringSerde, errorSerde);
     }
 
     public void start() throws InterruptedException {
-        // start processing
         chargeStream.start(chargeStreamProperties, "transaction-topic", outputTopic, errorTopic);
-        addShutdownHookAndBlock(chargeStream);
     }
 
-    // TODO perhaps this should be in a generic "service" class...
-    public static void addShutdownHookAndBlock(ChargeStream stream) throws InterruptedException {
-        Thread.currentThread().setUncaughtExceptionHandler((t, e) -> stream.stop());
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                stream.stop();
-            } catch (Exception ignored) {
-            }
-        }));
-        Thread.currentThread().join();
+    public void stop() {
+        chargeStream.stop();
     }
 }

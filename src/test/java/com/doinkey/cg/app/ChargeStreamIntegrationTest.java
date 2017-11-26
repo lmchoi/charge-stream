@@ -73,7 +73,8 @@ public class ChargeStreamIntegrationTest {
         // consumer for test output
         CONSUMER_CONFIG = createConsumerConfig(bootstrapServers, registryUrl);
 
-        // stream being tested
+        // stream being tested#
+        // TODO need a nicer way to override the config for testing
         CHARGE_STREAM_CONFIG = StreamPropertiesBuilder
                 .build("generic-avro-integration-test",
                         bootstrapServers,
