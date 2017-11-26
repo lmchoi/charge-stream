@@ -34,7 +34,7 @@ class ChargeStream {
                                                Topic<String, Charge> outputTopic,
                                                Topic<String, FailedTransaction> errorTopic) {
         KStreamBuilder builder = new KStreamBuilder();
-        KStream<String, Transaction> transactionStream = builder.stream(inputTopic.getName());
+        KStream<String, Transaction> transactionStream = inputTopic.stream(builder);
 
         KStream<String, Transaction>[] validatedTransactions = transactionStream.branch(
                 (k, v) -> transactionValidator.isKeyBad(k),

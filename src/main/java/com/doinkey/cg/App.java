@@ -17,7 +17,7 @@ public class App
         Configuration config = configurationLoader.load(configFilename);
         Properties chargeStreamProperties = StreamPropertiesBuilder.build(config.getChargeStream());
 
-        // TODO where should these go??
+        // TODO should these be also in the config?
         String inputTopic = "transaction-topic";
         String outputTopic = "charge-topic";
         String errorTopic = "failed-transactions";
